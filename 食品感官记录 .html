@@ -1,0 +1,1023 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>食品感官数据分析系统 · 专业版</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+    <style>
+        :root {
+            --primary: #2c6e49;
+            --primary-light: #4c956c;
+            --accent: #fefee3;
+            --sidebar-width: 240px;
+            --danger: #bc4742;
+        }
+        body {
+            font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            background: #f5f6f8;
+            margin: 0;
+        }
+        .app-container {
+            display: flex;
+            min-height: 100vh;
+        }
+        .mobile-menu-btn {
+            display: none;
+            position: fixed;
+            top: 16px;
+            left: 16px;
+            z-index: 1050;
+            background: var(--primary);
+            color: #fff;
+            border: none;
+            border-radius: 10px;
+            padding: 8px 14px;
+            font-size: 1.2rem;
+        }
+        .sidebar {
+            width: var(--sidebar-width);
+            background: linear-gradient(180deg, #1a3a2a 0%, #2c6e49 100%);
+            color: #fff;
+            position: fixed;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 2px 0 20px rgba(0, 0, 0, 0.15);
+            transition: transform 0.3s;
+        }
+        .sidebar-header {
+            padding: 24px 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+            text-align: center;
+        }
+        .sidebar-header h4 {
+            margin: 0;
+            font-weight: 700;
+            letter-spacing: 1px;
+            font-size: 1.1rem;
+            color: var(--accent);
+        }
+        .sidebar-nav {
+            flex: 1;
+            padding: 16px 0;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+        }
+        .sidebar-nav .nav-link {
+            color: rgba(255, 255, 255, 0.85);
+            padding: 10px 16px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            text-decoration: none;
+            margin: 2px 12px;
+            transition: all 0.2s;
+            user-select: none;
+        }
+        .sidebar-nav .nav-link:hover,
+        .sidebar-nav .nav-link.active {
+            background: rgba(255, 255, 255, 0.15);
+            color: #fff;
+            font-weight: 600;
+        }
+        .role-badge {
+            display: inline-block;
+            padding: 4px 14px;
+            border-radius: 20px;
+            font-size: 0.78rem;
+            font-weight: 600;
+            background: var(--accent);
+            color: #1a3a2a;
+        }
+        .main-content {
+            margin-left: var(--sidebar-width);
+            flex: 1;
+            padding: 24px 28px;
+            min-height: 100vh;
+            transition: margin-left 0.3s;
+        }
+        .page-section {
+            display: none;
+        }
+        .page-section.active {
+            display: block;
+        }
+        .card {
+            border: none;
+            border-radius: 14px;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+            background: #fff;
+            margin-bottom: 20px;
+        }
+        .card-header {
+            background: #fff;
+            border-bottom: 1px solid #eee;
+            font-weight: 700;
+            padding: 16px 20px;
+            border-radius: 14px 14px 0 0 !important;
+        }
+        .stat-card {
+            background: linear-gradient(135deg, #2c6e49 0%, #4c956c 100%);
+            color: #fff;
+            border-radius: 14px;
+            padding: 20px 24px;
+            text-align: center;
+            box-shadow: 0 4px 16px rgba(44, 110, 73, 0.25);
+        }
+        .stat-card.danger {
+            background: linear-gradient(135deg, #bc4742 0%, #a03a36 100%);
+            box-shadow: 0 4px 16px rgba(188, 71, 66, 0.25);
+        }
+        .stat-value {
+            font-size: 2.2rem;
+            font-weight: 800;
+        }
+        .stat-label {
+            font-size: 0.85rem;
+            opacity: 0.9;
+        }
+        .clickable {
+            cursor: pointer;
+            text-decoration: underline;
+        }
+        .btn-primary-custom {
+            background: var(--primary);
+            border-color: var(--primary);
+            color: #fff;
+            border-radius: 10px;
+            padding: 8px 18px;
+            font-weight: 600;
+        }
+        .btn-outline-custom {
+            border: 2px solid var(--primary);
+            color: var(--primary);
+            border-radius: 10px;
+            padding: 8px 18px;
+            font-weight: 600;
+            background: transparent;
+        }
+        .filter-bar {
+            background: #fff;
+            border-radius: 14px;
+            padding: 16px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+            display: flex;
+            flex-wrap: wrap;
+            align-items: flex-end;
+            gap: 12px;
+        }
+        .table-custom thead th {
+            background: linear-gradient(135deg, #eef4f0 0%, #dbe8e0 100%);
+            font-weight: 700;
+            color: #1a3a2a;
+            border-bottom: 2px solid var(--primary);
+            padding: 12px 10px;
+        }
+        .table-custom td {
+            padding: 8px 10px;
+            border-bottom: 1px solid #eee;
+            vertical-align: middle;
+        }
+        .tag {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 0.75rem;
+            background: #e8f5e9;
+            color: #2c6e49;
+            margin: 1px;
+        }
+        .score-cell {
+            max-width: 190px;
+            overflow-x: auto;
+            white-space: nowrap;
+        }
+        .comment-cell {
+            max-width: 120px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        @media (max-width: 768px) {
+            .mobile-menu-btn {
+                display: block;
+            }
+            .sidebar {
+                transform: translateX(-100%);
+            }
+            .sidebar.show {
+                transform: translateX(0);
+            }
+            .main-content {
+                margin-left: 0;
+                padding: 20px 12px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <button class="mobile-menu-btn" onclick="toggleSidebar()"><i class="bi bi-list"></i> 菜单</button>
+
+    <div class="app-container">
+        <!-- 侧边栏 -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <h4>🍽️ 感官分析系统</h4>
+                <small>食品体验数据平台</small>
+                <div class="mt-2"><span class="role-badge" id="currentRoleBadge">产品经理</span></div>
+            </div>
+            <nav class="sidebar-nav" id="sidebarNav"></nav>
+            <div class="p-3">
+                <select class="form-select form-select-sm" id="roleSwitcher" onchange="switchRole()" style="background:rgba(255,255,255,0.9);border:none;border-radius:8px;">
+                    <option value="product_manager">产品经理</option>
+                    <option value="taster">试吃人员</option>
+                    <option value="admin">系统管理员</option>
+                    <option value="viewer">查看人员</option>
+                </select>
+            </div>
+        </aside>
+
+        <main class="main-content" id="mainContent">
+            <!-- Dashboard -->
+            <section class="page-section active" id="page-dashboard">
+                <h3 class="mb-3">📊 总览仪表板</h3>
+                <div class="row g-3 mb-3" id="dashboardStats"></div>
+                <div class="row g-3">
+                    <div class="col-lg-7"><div class="card"><div class="card-header">🏆 各样品组最优样品得分</div><div class="card-body"><canvas id="chartBestSample"></canvas></div></div></div>
+                    <div class="col-lg-5"><div class="card"><div class="card-header">⚠️ 最近低分记录</div><div class="card-body" id="lowScoreRecords"></div></div></div>
+                </div>
+            </section>
+
+            <!-- Products -->
+            <section class="page-section" id="page-products">
+                <div class="d-flex justify-content-between mb-3"><h3>📦 产品管理</h3><button class="btn btn-primary-custom" onclick="openProductModal()"><i class="bi bi-plus-circle"></i> 添加样品</button></div>
+                <div class="card"><div class="card-body table-responsive"><table class="table table-custom" id="productsTable"><thead><tr><th>ID</th><th>名称</th><th>组别</th><th>产品经理</th><th>指标数</th><th>操作</th></tr></thead><tbody></tbody></table></div></div>
+            </section>
+
+            <!-- Tasters -->
+            <section class="page-section" id="page-tasters">
+                <div class="d-flex justify-content-between mb-3"><h3>👥 试吃人员管理</h3><button class="btn btn-primary-custom" onclick="openTasterModal()"><i class="bi bi-person-plus"></i> 添加人员</button></div>
+                <div class="card"><div class="card-body table-responsive"><table class="table table-custom" id="tastersTable"><thead><tr><th>ID</th><th>姓名</th><th>地域</th><th>饮食偏好</th><th>甜/咸偏好</th><th>口感</th><th>接受面</th><th>操作</th></tr></thead><tbody></tbody></table></div></div>
+            </section>
+
+            <!-- Records -->
+            <section class="page-section" id="page-records">
+                <h3 class="mb-3">📝 试吃记录</h3>
+                <div class="filter-bar">
+                    <input class="form-control" id="recordSearch" placeholder="搜索产品/人员" oninput="applyRecordFilter()">
+                    <select class="form-select" id="filterProduct" onchange="applyRecordFilter()"><option value="">全部产品</option></select>
+                    <select class="form-select" id="filterTaster" onchange="applyRecordFilter()"><option value="">全部人员</option></select>
+                    <input class="form-control" type="number" id="filterMinScore" placeholder="最低得分" min="0" max="10" onchange="applyRecordFilter()">
+                    <button class="btn btn-outline-custom btn-sm" onclick="clearRecordFilter()"><i class="bi bi-x-circle"></i> 清除</button>
+                    <button class="btn btn-primary-custom btn-sm" onclick="openRecordModal()"><i class="bi bi-plus"></i> 添加</button>
+                    <button class="btn btn-outline-custom btn-sm" onclick="exportFilteredRecords()"><i class="bi bi-download"></i> 导出记录</button>
+                </div>
+                <div class="card"><div class="card-body table-responsive"><table class="table table-custom" id="recordsTable"><thead><tr><th>ID</th><th>产品</th><th>人员</th><th>指标评分</th><th>基础匹配</th><th>修正</th><th>最终</th><th>满意度</th><th>评价</th><th>时间</th><th>操作</th></tr></thead><tbody></tbody></table></div></div>
+            </section>
+
+            <!-- Weights -->
+            <section class="page-section" id="page-weights">
+                <h3 class="mb-3">⚙️ 权重配置（支持按组/产品隔离）</h3>
+                <div class="row g-3">
+                    <div class="col-lg-7">
+                        <div class="card"><div class="card-header">维度权重</div><div class="card-body">
+                            <div class="mb-3 row">
+                                <div class="col-md-6"><label class="form-label">应用范围</label>
+                                    <select class="form-select" id="weightScope" onchange="onWeightScopeChange()">
+                                        <option value="">全局默认</option>
+                                        <option value="group">按样品组</option>
+                                        <option value="product">按单独产品</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6" id="weightGroupProductContainer" style="display:none;">
+                                    <label class="form-label" id="weightTargetLabel">选择目标</label>
+                                    <select class="form-select" id="weightTargetId"></select>
+                                </div>
+                            </div>
+                            <div id="weightConfigPanel"></div>
+                        </div></div>
+                        <div class="card mt-3"><div class="card-header">当前范围人员权重系数</div><div class="card-body" id="tasterWeightPanel"></div></div>
+                    </div>
+                    <div class="col-lg-5"><div class="card"><div class="card-header">版本历史</div><div class="card-body"><table class="table table-custom" id="weightVersionsTable"><thead><tr><th>版本名称</th><th>应用</th><th>时间</th><th>状态</th><th>操作</th></tr></thead><tbody></tbody></table></div></div></div>
+                </div>
+            </section>
+
+            <!-- Analysis -->
+            <section class="page-section" id="page-analysis">
+                <h3 class="mb-3">📊 分析报告</h3>
+                <div class="row mb-3 g-3">
+                    <div class="col-md-4"><label class="form-label">样品组筛选</label><select class="form-select" id="analysisGroupFilter" onchange="onAnalysisGroupChange()"><option value="">所有组</option></select></div>
+                    <div class="col-md-8"><label class="form-label">选择样品（可多选，Ctrl+点击）</label><select class="form-select" id="analysisProductFilter" multiple size="5" onchange="refreshAnalysis()"></select></div>
+                </div>
+                <div class="row g-3">
+                    <div class="col-lg-6"><div class="card"><div class="card-header">得分分布</div><div class="card-body"><canvas id="chartViolin"></canvas></div></div></div>
+                    <div class="col-lg-6"><div class="card"><div class="card-header">感官指标平均分雷达图</div><div class="card-body"><canvas id="chartRadarAnalysis"></canvas></div></div></div>
+                    <div class="col-lg-6"><div class="card"><div class="card-header">差评归因（含样品）</div><div class="card-body" id="attributionContainer"></div></div></div>
+                    <div class="col-lg-6"><div class="card"><div class="card-header">购买意愿-得分散点图</div><div class="card-body"><canvas id="chartScatter"></canvas></div></div></div>
+                </div>
+                <div class="mt-3"><button class="btn btn-outline-custom" onclick="exportAnalysisData()"><i class="bi bi-download"></i> 导出分析数据</button></div>
+            </section>
+
+            <!-- Groups -->
+            <section class="page-section" id="page-groups">
+                <div class="d-flex justify-content-between mb-3"><h3>📁 平行样品组</h3><button class="btn btn-primary-custom" onclick="openGroupModal()"><i class="bi bi-folder-plus"></i> 创建样品组</button></div>
+                <div class="card"><div class="card-body"><table class="table table-custom" id="groupsTable"><thead><tr><th>ID</th><th>名称</th><th>描述</th><th>样品数</th><th>操作</th></tr></thead><tbody></tbody></table></div></div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Modals -->
+    <div class="modal fade" id="productModal" tabindex="-1"><div class="modal-dialog modal-lg"><div class="modal-content"><div class="modal-header"><h5 class="modal-title" id="productModalTitle">产品/样品</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><form id="productForm"><input type="hidden" id="prodId"><div class="row g-3"><div class="col-md-6"><label class="form-label">名称</label><input class="form-control" id="prodName" required></div><div class="col-md-6"><label class="form-label">组别</label><select class="form-select" id="prodGroup"><option value="">无</option></select></div><div class="col-md-4"><label>组内标签</label><input class="form-control" id="prodGroupLabel"></div><div class="col-md-4"><label>批次</label><input class="form-control" id="prodBatch"></div><div class="col-md-4"><label>产品经理</label><input class="form-control" id="prodManager" value="pm1"></div></div><hr><h6>感官指标 <button class="btn btn-sm btn-outline-custom" type="button" onclick="addSensoryIndicatorRow()">+</button></h6><div id="sensoryIndicatorConfig" class="row g-2"></div></form></div><div class="modal-footer"><button class="btn btn-secondary" data-bs-dismiss="modal">取消</button><button class="btn btn-primary-custom" onclick="saveProduct()">保存</button></div></div></div></div>
+
+    <div class="modal fade" id="tasterModal" tabindex="-1"><div class="modal-dialog modal-lg"><div class="modal-content"><div class="modal-header"><h5>试吃人员</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><form id="tasterForm"><input type="hidden" id="tasterId"><div class="row g-3"><div class="col-md-6"><label>姓名</label><input class="form-control" id="tasterName" required></div><div class="col-md-6"><label>地域（自由填写）</label><input class="form-control" id="tasterRegion" placeholder="如：华东、西南"></div><div class="col-md-6"><label>饮食偏好/禁忌</label><input class="form-control" id="tasterDiet" placeholder="清真,不吃辣"></div><div class="col-md-3"><label>甜度</label><input class="form-control" type="number" id="tasterSweet" value="3" min="1" max="5"></div><div class="col-md-3"><label>咸度</label><input class="form-control" type="number" id="tasterSalty" value="3" min="1" max="5"></div><div class="col-md-3"><label>酸度</label><input class="form-control" type="number" id="tasterSour" value="3" min="1" max="5"></div><div class="col-md-3"><label>苦度</label><input class="form-control" type="number" id="tasterBitter" value="2" min="1" max="5"></div><div class="col-md-3"><label>鲜度</label><input class="form-control" type="number" id="tasterUmami" value="4" min="1" max="5"></div><div class="col-md-3"><label>脆度</label><input class="form-control" type="number" id="tasterCrisp" value="3" min="1" max="5"></div><div class="col-md-3"><label>嚼劲</label><input class="form-control" type="number" id="tasterChewy" value="3" min="1" max="5"></div><div class="col-md-3"><label>嫩滑度</label><input class="form-control" type="number" id="tasterTender" value="4" min="1" max="5"></div><div class="col-md-4"><label>香气</label><input class="form-control" type="number" id="tasterAroma" value="3" min="1" max="5"></div><div class="col-md-4"><label>外观</label><input class="form-control" type="number" id="tasterAppearance" value="3" min="1" max="5"></div><div class="col-md-4"><label>接受面</label><input class="form-control" type="number" id="tasterAcceptance" value="3" min="1" max="5"></div></div></form></div><div class="modal-footer"><button class="btn btn-secondary" data-bs-dismiss="modal">取消</button><button class="btn btn-primary-custom" onclick="saveTaster()">保存</button></div></div></div></div>
+
+    <div class="modal fade" id="recordModal" tabindex="-1"><div class="modal-dialog modal-lg"><div class="modal-content"><div class="modal-header"><h5 class="modal-title" id="recordModalTitle">试吃记录</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><form id="recordForm"><input type="hidden" id="recordId"><div class="row g-3"><div class="col-md-6"><label>产品</label><select class="form-select" id="recordProduct" required onchange="loadProductIndicatorsForRecord()"><option value="">选择</option></select></div><div class="col-md-6"><label>人员</label><select class="form-select" id="recordTaster" required><option value="">选择</option></select></div></div><hr><h6>指标评分</h6><div id="recordSensoryScores" class="row g-2"></div><hr><div class="row g-3"><div class="col-md-6"><label>满意度(0-10)</label><input class="form-control" type="number" id="recordSatisfaction" value="7" min="0" max="10"></div><div class="col-md-6"><label>购买意愿(0-10)</label><input class="form-control" type="number" id="recordPurchase" value="7" min="0" max="10"></div><div class="col-12"><label>评价</label><textarea class="form-control" id="recordComment" rows="2"></textarea></div></div></form></div><div class="modal-footer"><button class="btn btn-secondary" data-bs-dismiss="modal">取消</button><button class="btn btn-primary-custom" onclick="saveRecord()">保存</button></div></div></div></div>
+
+    <div class="modal fade" id="groupModal" tabindex="-1"><div class="modal-dialog"><div class="modal-content"><div class="modal-header"><h5>创建样品组</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><form id="groupForm"><div class="mb-3"><label>名称</label><input class="form-control" id="groupName" required></div><div class="mb-3"><label>描述</label><textarea class="form-control" id="groupDesc" rows="2"></textarea></div></form></div><div class="modal-footer"><button class="btn btn-secondary" data-bs-dismiss="modal">取消</button><button class="btn btn-primary-custom" onclick="saveGroup()">保存</button></div></div></div></div>
+
+    <div class="toast-container" id="toastContainer"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        (function() {
+            // =============== 可拖拽菜单定义 ===============
+            let NAV_ITEMS = [
+                { page: 'dashboard', icon: 'bi-speedometer2', label: '总览' },
+                { page: 'products', icon: 'bi-box-seam', label: '产品管理' },
+                { page: 'tasters', icon: 'bi-people', label: '试吃人员' },
+                { page: 'records', icon: 'bi-clipboard-check', label: '试吃记录' },
+                { page: 'weights', icon: 'bi-sliders', label: '权重配置' },
+                { page: 'analysis', icon: 'bi-bar-chart-line', label: '分析报告' },
+                { page: 'groups', icon: 'bi-collection', label: '样品组' }
+            ];
+
+            const STORAGE_KEY = 'sensory_app_final_v2';
+            const APP = {
+                currentRole: 'product_manager',
+                currentPage: 'dashboard',
+                db: {
+                    products: [], productGroups: [], tasters: [], records: [],
+                    weightVersions: [], sensoryIndicators: [], nextId: 1
+                },
+                charts: {},
+                filteredRecords: []
+            };
+
+            function genId() { return APP.db.nextId++; }
+
+            // 获取某产品的权重（优先级：产品专属 > 组专属 > 全局）
+            function getWeightForProduct(productId) {
+                const product = APP.db.products.find(p => p.id === productId);
+                if (!product) return getGlobalDefaultWeight();
+                // 产品专属
+                const productWeight = APP.db.weightVersions.find(w => w.isActive && w.appliedProductId === productId);
+                if (productWeight) return productWeight;
+                // 组专属
+                const groupWeight = APP.db.weightVersions.find(w => w.isActive && w.appliedGroupId === product.groupId);
+                if (groupWeight) return groupWeight;
+                return getGlobalDefaultWeight();
+            }
+
+            function getGlobalDefaultWeight() {
+                return APP.db.weightVersions.find(w => w.isActive && w.appliedGroupId === null && w.appliedProductId === null) || {
+                    dimensionWeights: { taste: 40, texture: 30, flavor: 20, appearance: 10 },
+                    versionId: 'v1.0-default',
+                    versionName: '默认全局',
+                    appliedGroupId: null,
+                    appliedProductId: null,
+                    tasterWeights: {}
+                };
+            }
+
+            const DIM_MAP = { '味道': 'taste', '口感': 'texture', '风味': 'flavor', '外观': 'appearance' };
+
+            function calculateScore(productId, tasterId, scoresObj) {
+                const product = APP.db.products.find(p => p.id === productId);
+                const taster = APP.db.tasters.find(t => t.id === tasterId);
+                const indicators = APP.db.sensoryIndicators.filter(si => si.productId === productId);
+                const weight = getWeightForProduct(productId);
+                const dimWeights = weight.dimensionWeights;
+                const tasterWeight = (weight.tasterWeights || {})[tasterId] || 1;
+
+                const diet = (taster?.diet || '').toLowerCase();
+                const prodName = (product?.name || '').toLowerCase();
+                if (diet.split(',').some(kw => prodName.includes(kw.trim()))) {
+                    return { baseMatch: 0, correction: -100, final: 0, details: { taboo: true, region: 0, acceptance: 0, brandMatch: 0 } };
+                }
+
+                const prefMap = {
+                    '甜度': taster?.sweetPref ?? 3, '咸度': taster?.saltyPref ?? 3, '酸度': taster?.sourPref ?? 3,
+                    '苦度': taster?.bitterPref ?? 2, '鲜度': taster?.umamiPref ?? 4, '脆度': taster?.crispPref ?? 3,
+                    '嚼劲': taster?.chewyPref ?? 3, '嫩滑度': taster?.tenderPref ?? 4, '香气浓度': taster?.aromaPref ?? 3,
+                    '色泽均匀度': taster?.appearancePref ?? 3, '外观完整度': taster?.appearancePref ?? 3,
+                    '品牌调性匹配度': taster?.appearancePref ?? 3
+                };
+
+                const dimGroups = { taste: [], texture: [], flavor: [], appearance: [] };
+                indicators.forEach(si => { const dk = DIM_MAP[si.dimension] || 'taste'; dimGroups[dk].push(si); });
+                const dimScores = {};
+                for (const [dk, list] of Object.entries(dimGroups)) {
+                    if (!list.length) { dimScores[dk] = 5; continue; }
+                    const prefSum = list.reduce((s, si) => s + (prefMap[si.indicatorName] || 3), 0) || 1;
+                    let totalMatch = 0;
+                    list.forEach(si => {
+                        const sv = scoresObj[si.indicatorName]; if (sv === undefined) return;
+                        const pv = prefMap[si.indicatorName] || 3;
+                        const w = pv / prefSum;
+                        const ns = (sv - si.minVal) / (si.maxVal - si.minVal || 1);
+                        const np = (pv - 1) / 4;
+                        totalMatch += w * (1 - Math.abs(ns - np));
+                    });
+                    dimScores[dk] = (totalMatch / list.length) * 10;
+                }
+
+                const tw = dimWeights.taste + dimWeights.texture + dimWeights.flavor + dimWeights.appearance || 100;
+                let baseMatch = (dimScores.taste || 5) * dimWeights.taste / tw + (dimScores.texture || 5) * dimWeights.texture / tw + (dimScores.flavor || 5) * dimWeights.flavor / tw + (dimScores.appearance || 5) * dimWeights.appearance / tw;
+                baseMatch *= tasterWeight;
+                baseMatch = Math.min(10, Math.round(baseMatch * 10) / 10);
+
+                let correction = 0;
+                const details = { taboo: false, region: 0, acceptance: 0, brandMatch: 0 };
+                const regionMap = { '华东': ['甜', '鲜'], '西南': ['辣', '麻'], '华北': ['咸', '香'], '华南': ['鲜', '甜'], '西北': ['咸', '香'], '东北': ['咸', '香'], '华中': ['辣', '咸'] };
+                if ((regionMap[taster?.region] || []).some(rp => prodName.includes(rp))) { correction += 8; details.region = 8; }
+                if ((taster?.acceptanceRange ?? 3) >= 4) { correction += 5; details.acceptance = 5; }
+                if ((scoresObj['品牌调性匹配度'] || 0) >= 7) { correction += 3; details.brandMatch = 3; }
+                correction = Math.round(correction * 10) / 10;
+                const final = Math.max(0, Math.min(10, baseMatch * 0.7 + correction * 0.3));
+                return { baseMatch: Math.round(baseMatch * 10) / 10, correction: Math.round(correction * 10) / 10, final: Math.round(final * 10) / 10, details };
+            }
+
+            function saveData() { localStorage.setItem(STORAGE_KEY, JSON.stringify({ navItems: NAV_ITEMS, db: APP.db })); }
+            function loadData() {
+                const s = localStorage.getItem(STORAGE_KEY);
+                if (s) {
+                    try {
+                        const data = JSON.parse(s);
+                        if (data.navItems) NAV_ITEMS = data.navItems;
+                        APP.db = data.db || APP.db;
+                        return true;
+                    } catch (e) {}
+                }
+                return false;
+            }
+
+            function initApp() {
+                const hasData = loadData();
+                if (!hasData) {
+                    APP.db.weightVersions = [{
+                        id: genId(), versionId: 'v1.0', versionName: '默认全局', dimensionWeights: { taste: 40, texture: 30, flavor: 20, appearance: 10 },
+                        appliedGroupId: null, appliedProductId: null, tasterWeights: {}, createdBy: 'admin', createdAt: new Date().toISOString(), isActive: true
+                    }];
+                    APP.db.productGroups = [
+                        { id: genId(), name: '配方优化组-饼干', description: '对比不同配方', createdAt: new Date().toISOString() },
+                        { id: genId(), name: '竞品对标-薯片', description: '自有与竞品对比', createdAt: new Date().toISOString() }
+                    ];
+                    const p1 = genId(); APP.db.products.push({ id: p1, name: '巧克力曲奇A', groupId: APP.db.productGroups[0].id, groupLabel: '配方A', batch: 'B001', productManager: 'pm1', createdAt: new Date().toISOString() });
+                    const p2 = genId(); APP.db.products.push({ id: p2, name: '巧克力曲奇B', groupId: APP.db.productGroups[0].id, groupLabel: '配方B', batch: 'B002', productManager: 'pm1', createdAt: new Date().toISOString() });
+                    const p3 = genId(); APP.db.products.push({ id: p3, name: '海盐薯片-自有', groupId: APP.db.productGroups[1].id, groupLabel: '自有', batch: 'B003', productManager: 'pm1', createdAt: new Date().toISOString() });
+                    [p1, p2, p3].forEach(pid => {
+                        ['甜度', '咸度', '香气浓度', '脆度', '色泽均匀度', '品牌调性匹配度'].forEach((name, i) => {
+                            APP.db.sensoryIndicators.push({ id: genId(), productId: pid, dimension: i < 2 ? '味道' : i === 2 ? '风味' : i === 3 ? '口感' : '外观', indicatorName: name, minVal: 0, maxVal: 10, indicatorType: '0-10分' });
+                        });
+                    });
+                    APP.db.tasters = [
+                        { id: genId(), name: '张三', region: '华东', diet: '无禁忌', sweetPref: 4, saltyPref: 2, sourPref: 2, bitterPref: 1, umamiPref: 4, crispPref: 4, chewyPref: 3, tenderPref: 3, aromaPref: 4, appearancePref: 3, acceptanceRange: 4, createdAt: new Date().toISOString() },
+                        { id: genId(), name: '李四', region: '西南', diet: '喜辣', sweetPref: 2, saltyPref: 4, sourPref: 3, bitterPref: 2, umamiPref: 5, crispPref: 3, chewyPref: 4, tenderPref: 2, aromaPref: 3, appearancePref: 3, acceptanceRange: 5, createdAt: new Date().toISOString() },
+                        { id: genId(), name: '王五', region: '华北', diet: '清真', sweetPref: 3, saltyPref: 3, sourPref: 2, bitterPref: 2, umamiPref: 3, crispPref: 3, chewyPref: 3, tenderPref: 4, aromaPref: 3, appearancePref: 4, acceptanceRange: 3, createdAt: new Date().toISOString() }
+                    ];
+                    for (let i = 0; i < 12; i++) {
+                        const prod = APP.db.products[Math.floor(Math.random() * APP.db.products.length)];
+                        const taster = APP.db.tasters[Math.floor(Math.random() * APP.db.tasters.length)];
+                        const scores = {};
+                        APP.db.sensoryIndicators.filter(s => s.productId === prod.id).forEach(s => scores[s.indicatorName] = Math.round((3 + Math.random() * 7) * 10) / 10);
+                        const calc = calculateScore(prod.id, taster.id, scores);
+                        APP.db.records.push({
+                            id: genId(), productId: prod.id, tasterId: taster.id, scores,
+                            overallSatisfaction: Math.round((4 + Math.random() * 6) * 10) / 10,
+                            purchaseIntent: Math.round((3 + Math.random() * 7) * 10) / 10,
+                            prosConsText: ['甜度适中', '略咸', '口感酥脆', '香气浓郁'][Math.floor(Math.random() * 4)],
+                            baseMatchScore: calc.baseMatch, correctionScore: calc.correction, finalScore: calc.final,
+                            correctionDetails: calc.details, createdAt: new Date(Date.now() - Math.floor(Math.random() * 20) * 86400000).toISOString()
+                        });
+                    }
+                    saveData();
+                }
+                renderNavigation();
+                // 初始化拖拽
+                new Sortable(document.getElementById('sidebarNav'), {
+                    animation: 150,
+                    onEnd: function () {
+                        const items = document.querySelectorAll('#sidebarNav .nav-link');
+                        const newOrder = [];
+                        items.forEach(el => {
+                            const page = el.dataset.page;
+                            const found = NAV_ITEMS.find(item => item.page === page);
+                            if (found) newOrder.push(found);
+                        });
+                        NAV_ITEMS = newOrder;
+                        saveData();
+                    }
+                });
+                updateSelects();
+                refreshAll();
+                navigateTo('dashboard');
+            }
+
+            function renderNavigation() {
+                const nav = document.getElementById('sidebarNav');
+                nav.innerHTML = NAV_ITEMS.map((item, index) =>
+                    `<a class="nav-link${index === 0 ? ' active' : ''}" data-page="${item.page}" onclick="navigateTo('${item.page}')"><i class="bi ${item.icon}"></i> ${item.label}</a>`
+                ).join('');
+            }
+
+            function toggleSidebar() { document.getElementById('sidebar').classList.toggle('show'); }
+            function navigateTo(page) {
+                APP.currentPage = page;
+                document.querySelectorAll('.page-section').forEach(s => s.classList.remove('active'));
+                document.querySelectorAll('.sidebar-nav .nav-link').forEach(l => l.classList.remove('active'));
+                document.getElementById('page-' + page)?.classList.add('active');
+                document.querySelector(`[data-page="${page}"]`)?.classList.add('active');
+                refreshPage(page);
+                if (window.innerWidth < 768) document.getElementById('sidebar').classList.remove('show');
+            }
+            function refreshPage(p) {
+                switch (p) {
+                    case 'dashboard': refreshDashboard(); break;
+                    case 'products': refreshProducts(); break;
+                    case 'tasters': refreshTasters(); break;
+                    case 'records': refreshRecords(); break;
+                    case 'weights': refreshWeights(); break;
+                    case 'analysis': refreshAnalysis(); break;
+                    case 'groups': refreshGroups(); break;
+                }
+            }
+            function refreshAll() { refreshPage(APP.currentPage); saveData(); }
+
+            function showToast(msg, type = 'success') {
+                const div = document.createElement('div');
+                div.className = `toast align-items-center text-bg-${type} border-0 show`;
+                div.innerHTML = `<div class="d-flex"><div class="toast-body">${msg}</div><button class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button></div>`;
+                document.getElementById('toastContainer')?.appendChild(div);
+                setTimeout(() => div.remove(), 3000);
+            }
+
+            function switchRole() {
+                APP.currentRole = document.getElementById('roleSwitcher').value;
+                document.getElementById('currentRoleBadge').textContent = { admin: '系统管理员', product_manager: '产品经理', taster: '试吃人员', viewer: '查看人员' }[APP.currentRole];
+            }
+
+            function refreshDashboard() {
+                const recs = APP.db.records;
+                document.getElementById('dashboardStats').innerHTML = `
+                <div class="col-md-6"><div class="stat-card"><div class="stat-value">${APP.db.products.length}</div><div class="stat-label">总样品数</div></div></div>
+                <div class="col-md-6"><div class="stat-card danger"><div class="stat-value clickable" onclick="showLowScoreRecords()">${recs.filter(r=>r.finalScore<4).length}</div><div class="stat-label">低分异常 (点击查看)</div></div></div>`;
+                if (APP.charts.best) APP.charts.best.destroy();
+                const ctx = document.getElementById('chartBestSample')?.getContext('2d');
+                if (ctx) {
+                    const groups = APP.db.productGroups;
+                    const labels = [], scores = [];
+                    groups.forEach(g => {
+                        const prods = APP.db.products.filter(p => p.groupId === g.id);
+                        let bestName = g.name, bestScore = 0;
+                        prods.forEach(p => {
+                            const pScores = recs.filter(r => r.productId === p.id).map(r => r.finalScore);
+                            if (pScores.length) {
+                                const avg = pScores.reduce((a, b) => a + b, 0) / pScores.length;
+                                if (avg > bestScore) { bestScore = avg; bestName = p.name; }
+                            }
+                        });
+                        labels.push(bestName); scores.push(bestScore.toFixed(1));
+                    });
+                    APP.charts.best = new Chart(ctx, { type: 'bar', data: { labels, datasets: [{ label: '组内最高均分', data: scores, backgroundColor: '#4c956c' }] }, options: { responsive: true, scales: { y: { max: 10 } } } });
+                }
+                document.getElementById('lowScoreRecords').innerHTML = recs.filter(r => r.finalScore < 4).slice(0, 5).map(r => {
+                    const p = APP.db.products.find(pr => pr.id === r.productId);
+                    return `<div class="d-flex justify-content-between"><span>${p?.name||''}</span><span class="text-danger">${r.finalScore.toFixed(1)}</span></div>`;
+                }).join('') || '<p class="text-muted">暂无低分记录</p>';
+            }
+
+            function showLowScoreRecords() { navigateTo('records'); document.getElementById('filterMinScore').value = 4; applyRecordFilter(); }
+
+            function refreshProducts() {
+                document.querySelector('#productsTable tbody').innerHTML = APP.db.products.map(p => `<tr><td>${p.id}</td><td>${p.name}</td><td>${APP.db.productGroups.find(g=>g.id===p.groupId)?.name||'独立'}</td><td>${p.productManager}</td><td>${APP.db.sensoryIndicators.filter(s=>s.productId===p.id).length}</td><td><button class="btn btn-sm btn-outline-custom" onclick="editProduct(${p.id})"><i class="bi bi-pencil"></i></button></td></tr>`).join('');
+                updateSelects();
+            }
+            function refreshTasters() {
+                document.querySelector('#tastersTable tbody').innerHTML = APP.db.tasters.map(t => `<tr><td>${t.id}</td><td>${t.name}</td><td>${t.region}</td><td>${t.diet}</td><td>甜${t.sweetPref}/咸${t.saltyPref}</td><td>脆${t.crispPref}/嚼${t.chewyPref}/嫩${t.tenderPref}</td><td>${t.acceptanceRange}</td><td><button class="btn btn-sm btn-outline-custom" onclick="editTaster(${t.id})"><i class="bi bi-pencil"></i></button></td></tr>`).join('');
+                updateSelects();
+            }
+
+            function updateSelects() {
+                const prod = document.getElementById('recordProduct'); if (prod) prod.innerHTML = '<option value="">选择</option>' + APP.db.products.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
+                const taster = document.getElementById('recordTaster'); if (taster) taster.innerHTML = '<option value="">选择</option>' + APP.db.tasters.map(t => `<option value="${t.id}">${t.name}</option>`).join('');
+                const fprod = document.getElementById('filterProduct'); if (fprod) fprod.innerHTML = '<option value="">全部产品</option>' + APP.db.products.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
+                const ftaster = document.getElementById('filterTaster'); if (ftaster) ftaster.innerHTML = '<option value="">全部人员</option>' + APP.db.tasters.map(t => `<option value="${t.id}">${t.name}</option>`).join('');
+                const aGroup = document.getElementById('analysisGroupFilter'); if (aGroup) aGroup.innerHTML = '<option value="">所有组</option>' + APP.db.productGroups.map(g => `<option value="${g.id}">${g.name}</option>`).join('');
+                const wTarget = document.getElementById('weightTargetId');
+                if (wTarget) {
+                    const scope = document.getElementById('weightScope')?.value;
+                    if (scope === 'group') wTarget.innerHTML = APP.db.productGroups.map(g => `<option value="${g.id}">${g.name}</option>`).join('');
+                    else if (scope === 'product') wTarget.innerHTML = APP.db.products.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
+                }
+            }
+
+            function onWeightScopeChange() {
+                const scope = document.getElementById('weightScope')?.value;
+                const container = document.getElementById('weightGroupProductContainer');
+                const label = document.getElementById('weightTargetLabel');
+                if (scope) {
+                    container.style.display = 'block';
+                    label.textContent = scope === 'group' ? '选择组' : '选择产品';
+                } else {
+                    container.style.display = 'none';
+                }
+                updateSelects();
+                refreshWeights();
+            }
+
+            function applyRecordFilter() {
+                const s = document.getElementById('recordSearch')?.value.toLowerCase() || '';
+                const pid = document.getElementById('filterProduct')?.value;
+                const tid = document.getElementById('filterTaster')?.value;
+                const min = parseFloat(document.getElementById('filterMinScore')?.value) || null;
+                APP.filteredRecords = APP.db.records.filter(r => {
+                    const p = APP.db.products.find(pr => pr.id === r.productId);
+                    const t = APP.db.tasters.find(tr => tr.id === r.tasterId);
+                    return (!s || (p?.name.toLowerCase().includes(s) || t?.name.toLowerCase().includes(s))) &&
+                           (!pid || r.productId === parseInt(pid)) && (!tid || r.tasterId === parseInt(tid)) &&
+                           (min === null || r.finalScore < min);
+                });
+                renderFilteredRecords();
+            }
+            function clearRecordFilter() {
+                document.getElementById('recordSearch').value = '';
+                document.getElementById('filterProduct').value = '';
+                document.getElementById('filterTaster').value = '';
+                document.getElementById('filterMinScore').value = '';
+                applyRecordFilter();
+            }
+            function renderFilteredRecords() {
+                const tbody = document.querySelector('#recordsTable tbody');
+                tbody.innerHTML = APP.filteredRecords.sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt)).map(r => {
+                    const p = APP.db.products.find(pr => pr.id === r.productId);
+                    const t = APP.db.tasters.find(tr => tr.id === r.tasterId);
+                    return `<tr>
+                        <td>${r.id}</td><td>${p?.name||''}</td><td>${t?.name||''}</td>
+                        <td><div class="score-cell">${Object.entries(r.scores||{}).map(([k,v])=>`<span class="tag">${k}:${v}</span>`).join('')}</div></td>
+                        <td>${r.baseMatchScore}</td><td>${r.correctionScore}</td><td><strong>${r.finalScore}</strong></td>
+                        <td>${'⭐'.repeat(Math.round(r.overallSatisfaction/2))}</td>
+                        <td><div class="comment-cell" title="${r.prosConsText||''}">${r.prosConsText||''}</div></td>
+                        <td>${new Date(r.createdAt).toLocaleDateString()}</td>
+                        <td><button class="btn btn-sm btn-outline-custom" onclick="editRecord(${r.id})"><i class="bi bi-pencil"></i></button> <button class="btn btn-sm btn-outline-danger" onclick="deleteRecord(${r.id})"><i class="bi bi-trash"></i></button></td>
+                    </tr>`;
+                }).join('');
+            }
+            function refreshRecords() { updateSelects(); applyRecordFilter(); }
+
+            function loadProductIndicatorsForRecord() {
+                const pid = parseInt(document.getElementById('recordProduct').value);
+                const container = document.getElementById('recordSensoryScores');
+                container.innerHTML = '';
+                if (!pid) return;
+                APP.db.sensoryIndicators.filter(s => s.productId === pid).forEach(si => {
+                    const div = document.createElement('div'); div.className = 'col-md-4';
+                    div.innerHTML = `<label>${si.indicatorName}</label><input class="form-control record-score-input" data-indicator="${si.indicatorName}" type="number" value="5" min="${si.minVal}" max="${si.maxVal}" step="0.5">`;
+                    container.appendChild(div);
+                });
+            }
+
+            function openRecordModal(id = null) {
+                document.getElementById('recordSensoryScores').innerHTML = '';
+                document.getElementById('recordComment').value = '';
+                document.getElementById('recordId').value = id || '';
+                document.getElementById('recordModalTitle').textContent = id ? '编辑试吃记录' : '添加试吃记录';
+                updateSelects();
+                if (id) {
+                    const r = APP.db.records.find(rec => rec.id === id);
+                    if (r) {
+                        document.getElementById('recordProduct').value = r.productId;
+                        document.getElementById('recordTaster').value = r.tasterId;
+                        document.getElementById('recordSatisfaction').value = r.overallSatisfaction;
+                        document.getElementById('recordPurchase').value = r.purchaseIntent;
+                        document.getElementById('recordComment').value = r.prosConsText || '';
+                        setTimeout(() => {
+                            loadProductIndicatorsForRecord();
+                            setTimeout(() => {
+                                document.querySelectorAll('#recordSensoryScores .record-score-input').forEach(inp => {
+                                    if (r.scores[inp.dataset.indicator] !== undefined) inp.value = r.scores[inp.dataset.indicator];
+                                });
+                            }, 50);
+                        }, 50);
+                    }
+                }
+                new bootstrap.Modal(document.getElementById('recordModal')).show();
+            }
+            function editRecord(id) { openRecordModal(id); }
+            function deleteRecord(id) { if (confirm('删除该记录？')) { APP.db.records = APP.db.records.filter(r => r.id !== id); refreshAll(); } }
+            function saveRecord() {
+                const rid = document.getElementById('recordId').value;
+                const pid = parseInt(document.getElementById('recordProduct').value);
+                const tid = parseInt(document.getElementById('recordTaster').value);
+                if (!pid || !tid) return showToast('请选择产品和人员', 'warning');
+                const scores = {};
+                document.querySelectorAll('#recordSensoryScores .record-score-input').forEach(inp => scores[inp.dataset.indicator] = parseFloat(inp.value) || 5);
+                const sat = parseFloat(document.getElementById('recordSatisfaction').value) || 7;
+                const pur = parseFloat(document.getElementById('recordPurchase').value) || 7;
+                const comment = document.getElementById('recordComment').value.trim();
+                const calc = calculateScore(pid, tid, scores);
+                const rec = { productId: pid, tasterId: tid, scores, overallSatisfaction: sat, purchaseIntent: pur, prosConsText: comment, baseMatchScore: calc.baseMatch, correctionScore: calc.correction, finalScore: calc.final, correctionDetails: calc.details, createdAt: new Date().toISOString() };
+                if (rid) {
+                    const idx = APP.db.records.findIndex(r => r.id === parseInt(rid));
+                    if (idx >= 0) APP.db.records[idx] = { ...APP.db.records[idx], ...rec };
+                } else APP.db.records.push({ id: genId(), ...rec });
+                bootstrap.Modal.getInstance(document.getElementById('recordModal')).hide();
+                refreshAll();
+            }
+
+            // 导出记录
+            function exportFilteredRecords() {
+                const records = APP.filteredRecords;
+                let csv = 'ID,产品,试吃人员,指标评分,基础匹配,修正,最终得分,满意度,评价,时间\n';
+                records.forEach(r => {
+                    const p = APP.db.products.find(pr => pr.id === r.productId);
+                    const t = APP.db.tasters.find(tr => tr.id === r.tasterId);
+                    const scoresStr = Object.entries(r.scores || {}).map(([k,v]) => `${k}:${v}`).join(';');
+                    csv += `${r.id},"${p?.name||''}","${t?.name||''}","${scoresStr}",${r.baseMatchScore},${r.correctionScore},${r.finalScore},${r.overallSatisfaction},"${r.prosConsText||''}",${new Date(r.createdAt).toLocaleDateString()}\n`;
+                });
+                downloadCSV(csv, '试吃记录.csv');
+            }
+
+            function exportAnalysisData() {
+                const select = document.getElementById('analysisProductFilter');
+                const selectedIds = [...select.selectedOptions].map(o => parseInt(o.value));
+                let records = APP.db.records;
+                if (selectedIds.length) records = records.filter(r => selectedIds.includes(r.productId));
+                let csv = '产品,甜度,咸度,香气浓度,脆度,色泽均匀度,品牌调性匹配度,最终得分,满意度\n';
+                records.forEach(r => {
+                    const p = APP.db.products.find(pr => pr.id === r.productId);
+                    csv += `${p?.name||''},${r.scores?.['甜度']||''},${r.scores?.['咸度']||''},${r.scores?.['香气浓度']||''},${r.scores?.['脆度']||''},${r.scores?.['色泽均匀度']||''},${r.scores?.['品牌调性匹配度']||''},${r.finalScore},${r.overallSatisfaction}\n`;
+                });
+                downloadCSV(csv, '分析数据.csv');
+            }
+
+            function downloadCSV(csv, filename) {
+                const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(blob);
+                link.download = filename;
+                link.click();
+                showToast('导出成功');
+            }
+
+            function refreshWeights() {
+                const scope = document.getElementById('weightScope')?.value;
+                const targetId = document.getElementById('weightTargetId')?.value;
+                let activeVersion;
+                if (scope === 'group' && targetId) {
+                    activeVersion = APP.db.weightVersions.find(w => w.isActive && w.appliedGroupId === parseInt(targetId)) || getGlobalDefaultWeight();
+                } else if (scope === 'product' && targetId) {
+                    activeVersion = APP.db.weightVersions.find(w => w.isActive && w.appliedProductId === parseInt(targetId)) || getGlobalDefaultWeight();
+                } else {
+                    activeVersion = getGlobalDefaultWeight();
+                }
+                const dw = activeVersion.dimensionWeights;
+                document.getElementById('weightConfigPanel').innerHTML = `
+                <div class="row g-3">
+                    <div class="col-md-6"><label>味型%</label><input class="form-control weight-input" data-dim="taste" type="number" value="${dw.taste}" min="5" max="85"></div>
+                    <div class="col-md-6"><label>口感%</label><input class="form-control weight-input" data-dim="texture" type="number" value="${dw.texture}" min="5" max="85"></div>
+                    <div class="col-md-6"><label>风味%</label><input class="form-control weight-input" data-dim="flavor" type="number" value="${dw.flavor}" min="5" max="85"></div>
+                    <div class="col-md-6"><label>外观%</label><input class="form-control weight-input" data-dim="appearance" type="number" value="${dw.appearance}" min="5" max="85"></div>
+                </div>
+                <div class="mt-2"><span id="weightSum">合计：${dw.taste+dw.texture+dw.flavor+dw.appearance}%</span></div>
+                <div class="mt-3"><label>版本名称</label><input class="form-control" id="versionName" value="${activeVersion.versionName||''}"></div>
+                <button class="btn btn-primary-custom mt-3" onclick="saveCurrentWeight()">保存当前权重</button>`;
+                document.querySelectorAll('.weight-input').forEach(inp => inp.addEventListener('input', () => {
+                    const sum = [...document.querySelectorAll('.weight-input')].reduce((s, el) => s + (+el.value || 0), 0);
+                    const sp = document.getElementById('weightSum');
+                    sp.textContent = '合计：' + sum + '%';
+                    sp.className = sum === 100 ? 'badge bg-success' : 'badge bg-danger';
+                }));
+                document.getElementById('tasterWeightPanel').innerHTML = `<table class="table table-custom"><thead><tr><th>试吃人员</th><th>权重系数</th></tr></thead><tbody>${APP.db.tasters.map(t => `<tr><td>${t.name}</td><td><input class="form-control taster-weight-input" data-taster="${t.id}" type="number" value="${activeVersion.tasterWeights?.[t.id]||1}" step="0.1" min="0.5" max="2"></td></tr>`).join('')}</tbody></table>`;
+                document.getElementById('weightVersionsTable').innerHTML = APP.db.weightVersions.slice().reverse().map(w => {
+                    let app = '全局';
+                    if (w.appliedGroupId) app = '组: ' + (APP.db.productGroups.find(g => g.id === w.appliedGroupId)?.name || w.appliedGroupId);
+                    else if (w.appliedProductId) app = '产品: ' + (APP.db.products.find(p => p.id === w.appliedProductId)?.name || w.appliedProductId);
+                    return `<tr><td>${w.versionName||w.versionId}</td><td>${app}</td><td>${new Date(w.createdAt).toLocaleDateString()}</td><td>${w.isActive?'生效':'历史'}</td><td>${!w.isActive?`<button class="btn btn-sm btn-outline-custom" onclick="activateWeightVersion('${w.versionId}')">启用</button>`:''}</td></tr>`;
+                }).join('');
+            }
+
+            function saveCurrentWeight() {
+                const dims = {}; let sum = 0;
+                document.querySelectorAll('.weight-input').forEach(i => { dims[i.dataset.dim] = +i.value; sum += +i.value; });
+                if (sum !== 100) return showToast('权重和必须100%', 'warning');
+                const versionName = document.getElementById('versionName').value.trim() || '未命名';
+                const scope = document.getElementById('weightScope').value;
+                const targetId = document.getElementById('weightTargetId')?.value;
+                const tasterWeights = {};
+                document.querySelectorAll('.taster-weight-input').forEach(inp => tasterWeights[inp.dataset.taster] = parseFloat(inp.value) || 1);
+                const newVersion = {
+                    id: genId(), versionId: 'v' + Date.now().toString(36), versionName,
+                    dimensionWeights: dims,
+                    appliedGroupId: scope === 'group' ? parseInt(targetId) : null,
+                    appliedProductId: scope === 'product' ? parseInt(targetId) : null,
+                    tasterWeights, createdBy: APP.currentRole, createdAt: new Date().toISOString(), isActive: true
+                };
+                APP.db.weightVersions.forEach(w => {
+                    if (w.appliedGroupId === newVersion.appliedGroupId && w.appliedProductId === newVersion.appliedProductId && w.isActive) w.isActive = false;
+                });
+                APP.db.weightVersions.push(newVersion);
+                refreshAll();
+                showToast('权重已保存');
+            }
+
+            function activateWeightVersion(versionId) {
+                const target = APP.db.weightVersions.find(w => w.versionId === versionId);
+                if (!target) return;
+                APP.db.weightVersions.forEach(w => {
+                    if (w.appliedGroupId === target.appliedGroupId && w.appliedProductId === target.appliedProductId && w.isActive) w.isActive = false;
+                });
+                target.isActive = true;
+                refreshAll();
+            }
+
+            function refreshGroups() {
+                document.querySelector('#groupsTable tbody').innerHTML = APP.db.productGroups.map(g => `<tr><td>${g.id}</td><td>${g.name}</td><td>${g.description}</td><td>${APP.db.products.filter(p=>p.groupId===g.id).length}</td><td><button class="btn btn-sm btn-outline-danger" onclick="deleteGroup(${g.id})">删除</button></td></tr>`).join('');
+            }
+
+            function openGroupModal() { document.getElementById('groupName').value=''; document.getElementById('groupDesc').value=''; new bootstrap.Modal(document.getElementById('groupModal')).show(); }
+            function saveGroup() {
+                const n = document.getElementById('groupName').value.trim(); if (!n) return;
+                APP.db.productGroups.push({ id: genId(), name: n, description: document.getElementById('groupDesc').value, createdAt: new Date().toISOString() });
+                bootstrap.Modal.getInstance(document.getElementById('groupModal')).hide();
+                refreshAll();
+            }
+            function deleteGroup(id) { if (confirm('删除该组？组内产品将变为独立。')) { APP.db.productGroups = APP.db.productGroups.filter(g => g.id !== id); APP.db.products.forEach(p => { if (p.groupId === id) p.groupId = null; }); refreshAll(); } }
+
+            function openProductModal(id = null) {
+                document.getElementById('prodId').value = id || '';
+                document.getElementById('sensoryIndicatorConfig').innerHTML = '';
+                if (id) {
+                    const p = APP.db.products.find(pr => pr.id === id);
+                    document.getElementById('prodName').value = p.name;
+                    document.getElementById('prodGroup').value = p.groupId || '';
+                    document.getElementById('prodGroupLabel').value = p.groupLabel || '';
+                    document.getElementById('prodBatch').value = p.batch || '';
+                    document.getElementById('prodManager').value = p.productManager;
+                    APP.db.sensoryIndicators.filter(s => s.productId === id).forEach(s => addSensoryIndicatorRow(s));
+                } else {
+                    document.getElementById('prodName').value = '';
+                    document.getElementById('prodGroup').value = '';
+                    document.getElementById('prodGroupLabel').value = '';
+                    document.getElementById('prodBatch').value = '';
+                    document.getElementById('prodManager').value = 'pm1';
+                    addSensoryIndicatorRow({ dimension: '味道', indicatorName: '甜度' });
+                    addSensoryIndicatorRow({ dimension: '口感', indicatorName: '脆度' });
+                    addSensoryIndicatorRow({ dimension: '外观', indicatorName: '品牌调性匹配度' });
+                }
+                updateSelects();
+                new bootstrap.Modal(document.getElementById('productModal')).show();
+            }
+            function editProduct(id) { openProductModal(id); }
+            function addSensoryIndicatorRow(data) {
+                const row = document.createElement('div'); row.className = 'col-12 sensory-indicator-row';
+                row.innerHTML = `
+                <div class="row g-2">
+                    <div class="col-md-3"><select class="form-select form-select-sm si-dimension"><option>味道</option><option>风味</option><option>口感</option><option>外观</option></select></div>
+                    <div class="col-md-3"><input class="form-control form-control-sm si-name" placeholder="指标名称" value="${data?.indicatorName||''}"></div>
+                    <div class="col-md-2"><input class="form-control form-control-sm si-min" type="number" value="${data?.minVal||0}"></div>
+                    <div class="col-md-2"><input class="form-control form-control-sm si-max" type="number" value="${data?.maxVal||10}"></div>
+                    <div class="col-md-1"><select class="form-select form-select-sm si-type"><option>0-10分</option></select></div>
+                    <div class="col-md-1"><button class="btn btn-sm btn-outline-danger" type="button" onclick="this.closest('.sensory-indicator-row').remove()"><i class="bi bi-x"></i></button></div>
+                </div>`;
+                if (data) {
+                    row.querySelector('.si-dimension').value = data.dimension;
+                    row.querySelector('.si-type').value = data.indicatorType || '0-10分';
+                }
+                document.getElementById('sensoryIndicatorConfig').appendChild(row);
+            }
+            function saveProduct() {
+                const id = document.getElementById('prodId').value;
+                const name = document.getElementById('prodName').value.trim(); if (!name) return showToast('请输入名称', 'warning');
+                const data = { name, groupId: document.getElementById('prodGroup').value ? parseInt(document.getElementById('prodGroup').value) : null, groupLabel: document.getElementById('prodGroupLabel').value.trim(), batch: document.getElementById('prodBatch').value.trim(), productManager: document.getElementById('prodManager').value.trim(), createdAt: new Date().toISOString() };
+                let pid;
+                if (id) { pid = parseInt(id); const idx = APP.db.products.findIndex(p => p.id === pid); if (idx >= 0) APP.db.products[idx] = { ...APP.db.products[idx], ...data }; APP.db.sensoryIndicators = APP.db.sensoryIndicators.filter(s => s.productId !== pid); }
+                else { pid = genId(); APP.db.products.push({ id: pid, ...data }); }
+                document.querySelectorAll('#sensoryIndicatorConfig .sensory-indicator-row').forEach(row => {
+                    const dim = row.querySelector('.si-dimension').value, iname = row.querySelector('.si-name').value.trim();
+                    if (iname) APP.db.sensoryIndicators.push({ id: genId(), productId: pid, dimension: dim, indicatorName: iname, minVal: parseFloat(row.querySelector('.si-min').value) || 0, maxVal: parseFloat(row.querySelector('.si-max').value) || 10, indicatorType: row.querySelector('.si-type').value });
+                });
+                bootstrap.Modal.getInstance(document.getElementById('productModal')).hide();
+                refreshAll();
+            }
+
+            function openTasterModal(id = null) {
+                document.getElementById('tasterId').value = id || '';
+                if (id) {
+                    const t = APP.db.tasters.find(tr => tr.id === id);
+                    document.getElementById('tasterName').value = t.name;
+                    document.getElementById('tasterRegion').value = t.region;
+                    document.getElementById('tasterDiet').value = t.diet || '';
+                    ['Sweet','Salty','Sour','Bitter','Umami','Crisp','Chewy','Tender','Aroma','Appearance','Acceptance'].forEach(k => document.getElementById('taster'+k).value = t[k.charAt(0).toLowerCase()+k.slice(1)+'Pref'] || 3);
+                } else {
+                    ['tasterName','tasterRegion','tasterDiet'].forEach(f => document.getElementById(f).value = '');
+                    ['Sweet','Salty','Sour','Bitter','Umami','Crisp','Chewy','Tender','Aroma','Appearance','Acceptance'].forEach(k => document.getElementById('taster'+k).value = 3);
+                }
+                new bootstrap.Modal(document.getElementById('tasterModal')).show();
+            }
+            function editTaster(id) { openTasterModal(id); }
+            function saveTaster() {
+                const id = document.getElementById('tasterId').value;
+                const name = document.getElementById('tasterName').value.trim(); if (!name) return showToast('请输入姓名', 'warning');
+                const data = { name, region: document.getElementById('tasterRegion').value.trim(), diet: document.getElementById('tasterDiet').value.trim(), sweetPref: +document.getElementById('tasterSweet').value, saltyPref: +document.getElementById('tasterSalty').value, sourPref: +document.getElementById('tasterSour').value, bitterPref: +document.getElementById('tasterBitter').value, umamiPref: +document.getElementById('tasterUmami').value, crispPref: +document.getElementById('tasterCrisp').value, chewyPref: +document.getElementById('tasterChewy').value, tenderPref: +document.getElementById('tasterTender').value, aromaPref: +document.getElementById('tasterAroma').value, appearancePref: +document.getElementById('tasterAppearance').value, acceptanceRange: +document.getElementById('tasterAcceptance').value, createdAt: new Date().toISOString() };
+                if (id) { const idx = APP.db.tasters.findIndex(t => t.id === parseInt(id)); if (idx >= 0) APP.db.tasters[idx] = { ...APP.db.tasters[idx], ...data }; }
+                else APP.db.tasters.push({ id: genId(), ...data });
+                bootstrap.Modal.getInstance(document.getElementById('tasterModal')).hide();
+                refreshAll();
+            }
+
+            function refreshAnalysis() {
+                const select = document.getElementById('analysisProductFilter');
+                const selectedIds = [...select.selectedOptions].map(o => parseInt(o.value));
+                let records = APP.db.records;
+                if (selectedIds.length) records = records.filter(r => selectedIds.includes(r.productId));
+                if (APP.charts.violin) APP.charts.violin.destroy();
+                const ctxV = document.getElementById('chartViolin')?.getContext('2d');
+                if (ctxV && records.length) {
+                    const prods = [...new Set(records.map(r => APP.db.products.find(p => p.id === r.productId)?.name || '未知'))];
+                    const data = prods.map(name => {
+                        const sc = records.filter(r => (APP.db.products.find(p => p.id === r.productId)?.name || '') === name).map(r => r.finalScore);
+                        return sc.length ? (sc.reduce((a,b) => a+b, 0) / sc.length).toFixed(1) : 0;
+                    });
+                    APP.charts.violin = new Chart(ctxV, { type: 'bar', data: { labels: prods, datasets: [{ label: '平均得分', data, backgroundColor: '#4c956c' }] }, options: { scales: { y: { max: 10 } } } });
+                }
+                if (APP.charts.radarAnalysis) APP.charts.radarAnalysis.destroy();
+                const ctxR = document.getElementById('chartRadarAnalysis')?.getContext('2d');
+                if (ctxR && records.length) {
+                    const indicatorsAll = [...new Set(APP.db.sensoryIndicators.map(si => si.indicatorName))];
+                    const avgScores = indicatorsAll.map(name => {
+                        const vals = records.map(r => r.scores?.[name]).filter(v => v !== undefined);
+                        return vals.length ? (vals.reduce((a,b) => a+b, 0) / vals.length).toFixed(1) : 0;
+                    });
+                    APP.charts.radarAnalysis = new Chart(ctxR, { type: 'radar', data: { labels: indicatorsAll, datasets: [{ label: '平均分', data: avgScores, borderColor: '#2c6e49', backgroundColor: 'rgba(44,110,73,0.2)' }] }, options: { scales: { r: { min: 0, max: 10 } } } });
+                }
+                document.getElementById('attributionContainer').innerHTML = '<table class="table"><thead><tr><th>样品</th><th>甜度</th><th>脆度</th><th>香气</th><th>品牌调性</th></tr></thead><tbody>' + records.filter(r => r.finalScore < 5).map(r => { const p = APP.db.products.find(pr => pr.id === r.productId); return `<tr><td>${p?.name||''}</td><td>${r.scores?.['甜度']||'-'}</td><td>${r.scores?.['脆度']||'-'}</td><td>${r.scores?.['香气浓度']||'-'}</td><td>${r.scores?.['品牌调性匹配度']||'-'}</td></tr>`; }).join('') + '</tbody></table>';
+                if (APP.charts.scatter) APP.charts.scatter.destroy();
+                const ctxS = document.getElementById('chartScatter')?.getContext('2d');
+                if (ctxS) APP.charts.scatter = new Chart(ctxS, { type: 'scatter', data: { datasets: [{ label: '购买意愿 vs 得分', data: records.map(r => ({ x: r.purchaseIntent, y: r.finalScore })), backgroundColor: '#2c6e49' }] } });
+            }
+
+            function onAnalysisGroupChange() {
+                const gid = document.getElementById('analysisGroupFilter').value;
+                const select = document.getElementById('analysisProductFilter');
+                const prods = gid ? APP.db.products.filter(p => p.groupId == parseInt(gid)) : APP.db.products;
+                select.innerHTML = prods.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
+                refreshAnalysis();
+            }
+
+            // 暴露全局函数
+            window.navigateTo = navigateTo;
+            window.toggleSidebar = toggleSidebar;
+            window.switchRole = switchRole;
+            window.showLowScoreRecords = showLowScoreRecords;
+            window.openProductModal = openProductModal;
+            window.editProduct = editProduct;
+            window.addSensoryIndicatorRow = addSensoryIndicatorRow;
+            window.saveProduct = saveProduct;
+            window.openTasterModal = openTasterModal;
+            window.editTaster = editTaster;
+            window.saveTaster = saveTaster;
+            window.openRecordModal = openRecordModal;
+            window.editRecord = editRecord;
+            window.deleteRecord = deleteRecord;
+            window.loadProductIndicatorsForRecord = loadProductIndicatorsForRecord;
+            window.saveRecord = saveRecord;
+            window.applyRecordFilter = applyRecordFilter;
+            window.clearRecordFilter = clearRecordFilter;
+            window.exportFilteredRecords = exportFilteredRecords;
+            window.exportAnalysisData = exportAnalysisData;
+            window.onWeightScopeChange = onWeightScopeChange;
+            window.saveCurrentWeight = saveCurrentWeight;
+            window.activateWeightVersion = activateWeightVersion;
+            window.openGroupModal = openGroupModal;
+            window.saveGroup = saveGroup;
+            window.deleteGroup = deleteGroup;
+            window.onAnalysisGroupChange = onAnalysisGroupChange;
+            window.refreshAnalysis = refreshAnalysis;
+
+            document.addEventListener('DOMContentLoaded', initApp);
+        })();
+    </script>
+</body>
+</html>
